@@ -10,6 +10,10 @@ Auth from GitHub to GCP uses **Workload Identity Federation** (keyless). The
 workflows are in `.github/workflows/`. After setup, pushing to `main` deploys the
 changed tier automatically; you can also run each workflow via *Run workflow*.
 
+> Until you complete this setup, the deploy jobs **skip** themselves (they are
+> gated on the `GCP_PROJECT_ID` / `SUPABASE_PROJECT_REF` repository variables), so
+> CI stays green and no deploy fails for missing credentials.
+
 > Replace placeholders in `ALL_CAPS`. Commands assume the [`gcloud` CLI](https://cloud.google.com/sdk/docs/install)
 > and the [Supabase CLI](https://supabase.com/docs/guides/cli) are installed and
 > you are authenticated (`gcloud auth login`).

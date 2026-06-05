@@ -17,6 +17,9 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Skip (rather than fail) until GCP is configured. Set the GCP_PROJECT_ID
+    # repository variable during setup — see docs/DEPLOYMENT.md.
+    if: ${{ vars.GCP_PROJECT_ID != '' }}
     steps:
       - uses: actions/checkout@v4
 

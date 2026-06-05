@@ -11,6 +11,9 @@ on:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+    # Skip (rather than fail) until Supabase is configured. Set the
+    # SUPABASE_PROJECT_REF repository variable during setup — see docs/DEPLOYMENT.md.
+    if: ${{ vars.SUPABASE_PROJECT_REF != '' }}
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
