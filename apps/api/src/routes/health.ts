@@ -7,13 +7,13 @@ export async function healthRoutes(app: FastifyInstance) {
     uptime: process.uptime(),
   }));
 
-  // Readiness verifies the DB connection is usable.
+  // Readiness verifies the DB connection AND that the schema is migrated.
+  // NB: a plain select (not head:true) so a missing table surfaces as an error
+  // — with head:true the 404 has no body and supabase-js leaves `error` null.
   app.get("/ready", { schema: { tags: ["system"] } }, async (_req, reply) => {
-    const { error } = await app.supabase
-      .from("projects")
-      .select("id", { count: "exact", head: true });
+    const { error } = await app.supabase.from("projects").select("id").limit(1);
     if (error) {
-      return reply.code(503).send({ status: "unavailable" });
+      return reply.code(503).send({ status: "unavailable", reason: error.message });
     }
     return { status: "ready" };
   });
