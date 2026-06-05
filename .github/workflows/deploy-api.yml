@@ -1,0 +1,56 @@
+name: Deploy API (Cloud Run)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/api/**"
+      - "packages/shared/**"
+      - "package-lock.json"
+      - ".github/workflows/deploy-api.yml"
+  workflow_dispatch:
+
+# Required for Workload Identity Federation (keyless auth to GCP).
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GAR_REPOSITORY }}/api:${{ github.sha }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push image
+        run: |
+          docker build -f apps/api/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ vars.CLOUD_RUN_SERVICE }} \
+            --image "$IMAGE" \
+            --region ${{ vars.GCP_REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --set-env-vars "NODE_ENV=production,SUPABASE_URL=${{ vars.SUPABASE_URL }},CORS_ORIGIN=${{ vars.WEB_ORIGIN }}" \
+            --set-secrets "SUPABASE_SERVICE_ROLE_KEY=supabase-service-role-key:latest"
+
+      - name: Show service URL
+        run: gcloud run services describe ${{ vars.CLOUD_RUN_SERVICE }} --region ${{ vars.GCP_REGION }} --format='value(status.url)'

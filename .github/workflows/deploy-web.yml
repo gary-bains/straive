@@ -1,0 +1,60 @@
+name: Deploy Web (GCS bucket)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/shared/**"
+      - "package-lock.json"
+      - ".github/workflows/deploy-web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web (with production env)
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          npm run build:shared
+          npm run build -w @ticketing/web
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Sync to bucket
+        run: |
+          gsutil -m rsync -d -r apps/web/dist gs://${{ vars.GCS_BUCKET }}
+
+      - name: Set cache headers
+        run: |
+          # Fingerprinted assets can be cached forever.
+          gsutil -m setmeta -h "Cache-Control:public, max-age=31536000, immutable" \
+            "gs://${{ vars.GCS_BUCKET }}/assets/**" || true
+          # index.html must always be revalidated so new deploys are picked up.
+          gsutil setmeta -h "Cache-Control:no-cache, max-age=0" \
+            "gs://${{ vars.GCS_BUCKET }}/index.html"
