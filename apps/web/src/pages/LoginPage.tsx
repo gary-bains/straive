@@ -83,11 +83,6 @@ export function LoginPage() {
             ? "Need an account? Sign up"
             : "Have an account? Sign in"}
         </button>
-
-        <p className="muted small">
-          Seeded local users: alice / bob / carol / dave @example.com — password
-          <code> password123</code>
-        </p>
       </form>
     </div>
   );

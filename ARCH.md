@@ -44,26 +44,20 @@ through the API, which owns authorization and database access.
 
 ## 3. Data model
 
+![Database schema](./docs/database-schema.png)
+
 ```
-profiles                      projects                       memberships
-─────────                     ─────────                      ───────────
-id  uuid PK ─┐                id  uuid PK ◀──┐               id          uuid PK
-email        │ (= auth.users) name           │              project_id  ─▶ projects.id
-full_name    │                description    │   ┌────────▶ user_id     ─▶ profiles.id
-avatar_url   │                owner_id  ──────┼───┘          role  project_role
-created_at   │                created_at      │              created_at
-             │                updated_at      │              UNIQUE(project_id, user_id)
-             │                                │
-             │  tickets                       │
-             │  ────────                      │
-             │  id          uuid PK           │
-             ├─ reporter_id ─▶ profiles.id    │
-             └─ assignee_id ─▶ profiles.id    │
-                project_id  ─────────────────▶┘
-                title, description
-                status   ticket_status   (todo | in_progress | in_review | done)
-                priority ticket_priority (low | medium | high | urgent)
-                created_at, updated_at
+profiles (= auth.users)   projects                 memberships
+  id  uuid PK ◀───┐         id  uuid PK ◀──┐         id          uuid PK
+  email           │         name           ├───────  project_id  ─▶ projects.id
+  full_name       └──────── owner_id        └───────  user_id     ─▶ profiles.id
+  avatar_url                created_at               role  project_role  (owner|admin|member|viewer)
+  created_at                updated_at               UNIQUE(project_id, user_id)
+
+tickets
+  id uuid PK | project_id ─▶ projects.id | reporter_id ─▶ profiles.id | assignee_id ─▶ profiles.id
+  title, description | status ticket_status (todo|in_progress|in_review|done)
+  priority ticket_priority (low|medium|high|urgent) | created_at, updated_at
 ```
 
 Key decisions:

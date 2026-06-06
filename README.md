@@ -24,6 +24,29 @@ type sharing.
         └────────────────── auth (sign in, JWT) ───────────────────────┘
 ```
 
+## Live demo
+
+The app is deployed and running on Google Cloud + Supabase:
+
+| Tier | URL |
+| ---- | --- |
+| **Web app** | https://storage.googleapis.com/loonie-hour-ticketing-web/index.html |
+| **API** | https://ticketing-api-kuek2km2xa-uc.a.run.app |
+| **API docs (Swagger)** | https://ticketing-api-kuek2km2xa-uc.a.run.app/docs |
+
+The demo project ("Website Redesign") is seeded with four users — one per role
+(owner, admin, member, viewer) — and sample tickets, so you can compare what
+each role can do. **Login credentials are provided separately by email.**
+
+## Data model
+
+`profiles → projects → memberships (per-project role) → tickets`:
+
+![Database schema](./docs/database-schema.png)
+
+See **[ARCH.md](./ARCH.md)** for the schema rationale, permission matrix and
+auth flow.
+
 ## Repository layout
 
 ```
